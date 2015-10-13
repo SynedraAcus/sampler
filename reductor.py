@@ -69,9 +69,10 @@ class SequenceSet(object):
 
     def _load_fasta(self, handle):
         for record in SeqIO.parse(handle, format='fasta'):
-            self.sequences.update({record.name: record})
-            dist_row = [scoredist(record, self[x]) for x in self.matrix.ids]
-            self.matrix.add_row(record.id, dist_row)
+            self.append(record)
+            # self.sequences.update({record.name: record})
+            # dist_row = [scoredist(record, self[x]) for x in self.matrix.ids]
+            # self.matrix.add_row(record.id, dist_row)
 
     def __getitem__(self, item):
         '''
@@ -83,10 +84,11 @@ class SequenceSet(object):
         '''
         Append a sequence to Sequence set and recalculate distance
         '''
-        pass
+        self.sequences.update({item.name: item})
+        dist_row = [scoredist(item, self[x]) for x in self.matrix.ids]
+        self.matrix.add_row(item.id, dist_row)
 
-    def remove(self, item):
-        pass
+
 
 class DistanceMatrix(object):
     '''
@@ -136,6 +138,7 @@ class DistanceMatrix(object):
         :param dist_list: list of distances to all the other sequences
         :return:
         '''
+        #  print('{0} {1}'.format(new_id, ' '.join((str(x) for x in dist_list))))
         for pos in range(len(self.ids)):
             self.matrix[(new_id, self.ids[pos])] = dist_list[pos]
             self.matrix[(self.ids[pos], new_id)] = dist_list[pos]
