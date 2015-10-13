@@ -1,9 +1,9 @@
 Sampler: dataset reduction utility for phylogenetic analyses
 
-Sampler takes a multi-FASTA (not an alignment!) or a PHYLIP-formatted distance matrix
-and samples a requested number of sequences from it, trying to be as taxonomically
-comprehensive as possible. If a FASTA file is supplied, the distances are calculated by
-Scoredist metric.
+Sampler takes a multi-FASTA (not an alignment!) or a PHYLIP-formatted
+distance matrix and samples a requested number of sequences from it,
+trying to be as taxonomically comprehensive as possible. If a FASTA file
+is supplied, the distances are calculated by Scoredist metric.
 Returns a reduced matrix or FASTA file, depending on what was supplied
 
 Options:
