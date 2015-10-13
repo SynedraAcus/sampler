@@ -35,7 +35,7 @@ def scoredist(seq1, seq2, matrix=matrix, correction=1.337):
     seqs = ['', '']
     for a in lines[7:]:
         if ':' in a:
-            j = 1
+            j = 1почему ты мне
         elif '1' in a:
             break # If numeric lines started then all sequence was printed already
         else:
@@ -92,6 +92,8 @@ class SequenceSet(object):
         dist_row = [scoredist(item, self[x]) for x in self.matrix.ids]
         self.matrix.add_row(item.id, dist_row)
 
+    def __len__(self):
+        return len(self.sequences)
 
 
 class DistanceMatrix(object):
@@ -177,7 +179,7 @@ class DistanceMatrix(object):
         :param dist_list: list of distances to all the other sequences
         :return:
         '''
-        print(len(self.ids))
+        sys.stderr.write(len(self.ids))
         #  print('{0} {1}'.format(new_id, ' '.join((str(x) for x in dist_list))))
         for pos in range(len(self.ids)):
             self.matrix[(new_id, self.ids[pos])] = dist_list[pos]
