@@ -3,7 +3,7 @@ __author__ = 'morozov'
 
 import argparse
 from Bio import SeqIO
-import reductor
+from reductor import *
 import sys
 
 arg_parser = argparse.ArgumentParser(description='Reduce sequence dataset using Distant Joining approach')
@@ -15,6 +15,8 @@ args = arg_parser.parse_args()
 if not(args.f or args.d):
     sys.stderr.write('Either -f or -d option should be used')
 
+if args.f:
+    seqs = SequenceSet(handle=open(args.f))
 #  Insert matrix/seq parsing here so we can calculate uniform number
 
 if '.' in args.n:

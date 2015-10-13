@@ -10,3 +10,7 @@ Options:
 -f Multi-FASTA file
 -d PHYLIP-formatted square distance matrix
 -n Number or percentage of sequences to sample
+
+################################
+Temporary note: set NWALIGN variable to the location of the Fortran
+aligner. In some release I'll throw it into distribution.
