@@ -4,6 +4,7 @@ from Bio import SeqIO
 from Bio.SubsMat import MatrixInfo
 import subprocess
 from math import log
+import copy
 import sys
 ########
 NWALIGN = '/home/morozov/tools/NWalign/NWalign' # Location of NWalign software. REMOVE HARDCODE!
@@ -68,21 +69,24 @@ class SequenceSet(object):
             self._load_fasta(handle)
 
     def _load_fasta(self, handle):
+        '''
+        Load sequences from multi-FASTA and populate DistanceMatrix
+        :param handle: FASTA filehandle
+        '''
         for record in SeqIO.parse(handle, format='fasta'):
             self.append(record)
-            # self.sequences.update({record.name: record})
-            # dist_row = [scoredist(record, self[x]) for x in self.matrix.ids]
-            # self.matrix.add_row(record.id, dist_row)
 
     def __getitem__(self, item):
         '''
         Return a sequence with the given ID
+        :param item: sequence ID
         '''
         return self.sequences[item]
 
     def append(self, item):
         '''
         Append a sequence to Sequence set and recalculate distance
+        :param item: SeqRecord object
         '''
         self.sequences.update({item.name: item})
         dist_row = [scoredist(item, self[x]) for x in self.matrix.ids]
@@ -121,7 +125,42 @@ class DistanceMatrix(object):
                 self.matrix[(self.irangeds[seq2_number], self.ids[seq1_number])] = line_list[seq1_number][seq2_number]
 
     def dj(self, final_count):
-        pass
+        '''
+        Subsample from this distance matrix
+        :param final_count: Number of sequences that should be in a final sample
+        :return: DistanceMatrix object
+        '''
+        if final_count > len(self.matrix):
+            raise ValueError('Cannot sample more sequences than there are in a dataset!')
+        subset = DistanceMatrix()
+        non_sampled = copy.deepcopy(self.ids)
+        max_sum = 0
+        sum_dists = {}
+        leader = None
+        for x in self.ids:
+            sum_dists[x] = sum(self[(x, y)] for y in self.ids if x != y )
+            if sum_dists[x] > max_sum:
+                max_sum = sum_dists[x]
+                leader = x
+        subset.add_row(leader, [])
+        non_sampled.remove(leader)
+        #  We just added the item that is furthest from others as the first item in subsample
+        #  From now on sum_dists is a sum of distances from every element IN SUBSET, starting from first one
+        sum_dists = {x: self[(x, leader)] for x in non_sampled}
+        for j in range(final_count - 1):
+            max_sum = 0
+            for candidate in non_sampled:
+                #  Looking for furthest one again
+                if sum_dists[candidate]>max_sum:
+                    max_sum = sum_dists[candidate]
+                    leader = candidate
+            #  He's in leader now
+            subset.add_row(leader, [self[(leader, x)] for x in subset.ids])
+            non_sampled.remove(leader)
+            for x in non_sampled:
+                sum_dists[x]+=self[(x, leader)]
+        return subset
+
 
     def __getitem__(self, item):
         '''
@@ -138,6 +177,7 @@ class DistanceMatrix(object):
         :param dist_list: list of distances to all the other sequences
         :return:
         '''
+        print(len(self.ids))
         #  print('{0} {1}'.format(new_id, ' '.join((str(x) for x in dist_list))))
         for pos in range(len(self.ids)):
             self.matrix[(new_id, self.ids[pos])] = dist_list[pos]

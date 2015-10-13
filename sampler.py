@@ -23,3 +23,6 @@ if '.' in args.n:
     final_number = float(args.n)
 else:
     final_number = int(args.n)
+
+final = seqs.matrix.dj(final_number)
+print('\n'.join(final.ids))
