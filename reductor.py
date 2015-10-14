@@ -35,7 +35,7 @@ def scoredist(seq1, seq2, matrix=matrix, correction=1.337):
     seqs = ['', '']
     for a in lines[7:]:
         if ':' in a:
-            j = 1почему ты мне
+            j = 1
         elif '1' in a:
             break # If numeric lines started then all sequence was printed already
         else:
@@ -62,8 +62,9 @@ class SequenceSet(object):
     '''
     Container class for sequences.
     '''
-    def __init__(self, handle=None, sequences=None):
+    def __init__(self, handle=None, find_distances = True):
         self.sequences = {}
+        self.find_distances = find_distances
         self.matrix = DistanceMatrix()
         if handle is not None:
             self._load_fasta(handle)
@@ -85,12 +86,13 @@ class SequenceSet(object):
 
     def append(self, item):
         '''
-        Append a sequence to Sequence set and recalculate distance
+        Append a sequence to Sequence set and recalculate distance, if needed
         :param item: SeqRecord object
         '''
         self.sequences.update({item.name: item})
-        dist_row = [scoredist(item, self[x]) for x in self.matrix.ids]
-        self.matrix.add_row(item.id, dist_row)
+        if self.find_distances:
+            dist_row = [scoredist(item, self[x]) for x in self.matrix.ids]
+            self.matrix.add_row(item.id, dist_row)
 
     def __len__(self):
         return len(self.sequences)
@@ -104,9 +106,9 @@ class DistanceMatrix(object):
         self.matrix = {}
         self.ids = []
         if not handle is None:
-            self._from_handle(handle)
+            self.from_handle(handle)
 
-    def _from_handle(self, handle):
+    def from_handle(self, handle):
         '''
         Read distance matrix from filehandle
         :param handle: filehandle to read from
@@ -114,17 +116,31 @@ class DistanceMatrix(object):
         '''
         line_list = []
         for line in handle:
-            line_list.append(line.split('\t'))
+            l = line.split('\t')
+            if len(l)>1:
+                line_list.append(l)
         self.ids = [x[0] for x in line_list]
-        for row in line_list:
-            del(row[0])
+        for x in range(len(line_list)):
+            del(line_list[x][0])
+            line_list[x] = [float(j) for j in line_list[x]]
             #  IDs went to the attribute, no use for them here
         for seq1_number in range(len(line_list)):
             for seq2_number in range(len(line_list)):
             #  Order of the lines & items in line is the same as that of IDs
             #  Creating both of items to save __getitem__/__setitem__ hassle. Maybe add that later
                 self.matrix[(self.ids[seq1_number], self.ids[seq2_number])] = line_list[seq1_number][seq2_number]
-                self.matrix[(self.irangeds[seq2_number], self.ids[seq1_number])] = line_list[seq1_number][seq2_number]
+                self.matrix[(self.ids[seq2_number], self.ids[seq1_number])] = line_list[seq1_number][seq2_number]
+
+    def to_handle(self, handle):
+        '''
+        Write distance matrix to filehandle
+        :param handle: Filehandle to write matrix to
+        :return:
+        '''
+        handle.write('{0}\n'.format(len(self.ids)))
+        for seqid in self.ids:
+            line = seqid+'\t'+'\t'.join((str(self.matrix[(seqid, x)]) for x in self.ids))+'\n'
+            handle.write(line)
 
     def dj(self, final_count):
         '''
@@ -179,11 +195,12 @@ class DistanceMatrix(object):
         :param dist_list: list of distances to all the other sequences
         :return:
         '''
-        sys.stderr.write(len(self.ids))
+        # sys.stderr.write(len(self.ids))
         #  print('{0} {1}'.format(new_id, ' '.join((str(x) for x in dist_list))))
         for pos in range(len(self.ids)):
             self.matrix[(new_id, self.ids[pos])] = dist_list[pos]
             self.matrix[(self.ids[pos], new_id)] = dist_list[pos]
+        self.matrix[(new_id, new_id)] = 0
         self.ids.append(new_id)
 
     def keys(self):
