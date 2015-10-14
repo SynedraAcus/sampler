@@ -25,6 +25,9 @@ if args.d:
     length = len(distmat.ids)  #  Yes, I could've given matrix __len__
 if args.f and args.d:
     seqs = SequenceSet(handle=open(args.f), find_distances=False)
+
+    if not sorted(seqs.sequences.keys()) == sorted(distmat.ids):
+        raise ValueError('Different sequence collections in matrix and FASTA')
     seqs.matrix = distmat
     length = len(seqs)
 if args.f and not args.d:
