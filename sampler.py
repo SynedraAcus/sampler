@@ -64,6 +64,11 @@ else:
 # Writing matrix
 final.to_handle(matrix_handle)
 
+# Writing unreduced matrix, if it was not in the input data
+if not args.d:
+    full_matrix_handle = open('{0}.dist'.format(args.f), mode='w')
+    seqs.matrix.to_handle(full_matrix_handle)
+
 # Writing fasta, if any
 if args.f:
     fasta_handle = open('{0}.reduced'.format(args.f), mode='w')
