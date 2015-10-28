@@ -1,6 +1,6 @@
 __author__ = 'morozov'
 
-from Bio import SeqIO
+from Bio import SeqIO, Alphabet
 from Bio.SubsMat import MatrixInfo
 import subprocess
 from math import log
@@ -62,7 +62,8 @@ class SequenceSet(object):
     '''
     Container class for sequences.
     '''
-    def __init__(self, handle=None, find_distances = True):
+    def __init__(self, handle=None, find_distances = True, alphabet=Alphabet.ProteinAlphabet()):
+        self.alphabet = alphabet
         self.sequences = {}
         self.find_distances = find_distances
         self.matrix = DistanceMatrix()
@@ -89,10 +90,17 @@ class SequenceSet(object):
         Append a sequence to Sequence set and recalculate distance, if needed
         :param item: SeqRecord object
         '''
+        if not Alphabet._check_type_compatible([self.alphabet, item._alphabet]):
+            raise TypeError('Incompatible alphabets in input data')
         self.sequences.update({item.name: item})
         if self.find_distances:
+            # Protein sequences are aligned with NWalign and scoredist is computed
             dist_row = [scoredist(item, self[x]) for x in self.matrix.ids]
             self.matrix.add_row(item.id, dist_row)
+        # elif self.find_distances and isinstance(self.alphabet, Alphabet.NucleotideAlphabet):
+        #     # Nucleotide sequences are aligned with Bio.pairwise2
+        #     pass
+
 
     def __len__(self):
         return len(self.sequences)
@@ -115,10 +123,25 @@ class DistanceMatrix(object):
         :return:
         '''
         line_list = []
+        split_list = []
         for line in handle:
-            l = line.split('\t')
+            line=line.rstrip('\n')
+            line=line.lstrip(' ')
+            l = line.split(' ')
             if len(l)>1:
-                line_list.append(l)
+                try:
+                    float(l[0])
+                    # If the first element is a float, we need to add the line to split_list
+                    # There may be more distances coming for the same sequence
+                    split_list += l
+                except ValueError:
+                    # If the first element is not float, then a new line has started
+                    if len(split_list) > 0:
+                        #  If there is something in split_list, time to dump it
+                        line_list.append(split_list)
+                    #  And start a new split_list with the new line
+                    split_list = l
+        line_list.append(split_list) #  And dump the last split_list once the file is over
         self.ids = [x[0] for x in line_list]
         for x in range(len(line_list)):
             del(line_list[x][0])
@@ -156,7 +179,7 @@ class DistanceMatrix(object):
         sum_dists = {}
         leader = None
         for x in self.ids:
-            sum_dists[x] = sum(self[(x, y)] for y in self.ids if x != y )
+            sum_dists[x] = sum(self[(x, y)] for y in self.ids if x != y)
             if sum_dists[x] > max_sum:
                 max_sum = sum_dists[x]
                 leader = x
