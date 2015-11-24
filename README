@@ -1,6 +1,6 @@
 Sampler: dataset reduction utility for phylogenetic analyses
 
-Sampler takes a multi-FASTA (not an alignment!) or a PHYLIP-formatted
+Sampler takes a multi-FASTA (not an alignment!) or an EMBOSS-formatted
 distance matrix and samples a requested number of sequences from it,
 trying to be as taxonomically comprehensive as possible. If a FASTA file
 is supplied, the distances are calculated by Scoredist metric.
@@ -10,7 +10,15 @@ Options:
 -f Multi-FASTA file
 -d PHYLIP-formatted square distance matrix
 -n Number or percentage of sequences to sample
+-p FASTA contains aminoacid sequences. Defaults to True
+-i Print only IDs of selected sequences
 
+Dependencies:
+Python 3.4 or higher
+Biopython
+NWALIGN
+
+The software is distributed under the terms of CC-BY license.
 ################################
-Temporary note: set NWALIGN variable to the location of the Fortran
-aligner. In some release I'll throw it into distribution.
+Temporary note: set NWALIGN variable in reductor.py to the location of the Fortran
+aligner. In some later release I'll throw it into distribution.
