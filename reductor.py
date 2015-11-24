@@ -5,6 +5,7 @@ from Bio.SubsMat import MatrixInfo
 import subprocess
 from math import log
 import copy
+import re
 import sys
 ########
 NWALIGN = '/home/morozov/tools/NWalign/NWalign' # Location of NWalign software. REMOVE HARDCODE!
@@ -58,53 +59,26 @@ def scoredist(seq1, seq2, matrix=matrix, correction=1.337):
     dist = -1*log(sigma_n/sigma_un)*100*correction
     return dist
 
-class SequenceSet(object):
-    '''
-    Container class for sequences.
-    '''
-    def __init__(self, handle=None, find_distances = True, alphabet=Alphabet.ProteinAlphabet()):
-        self.alphabet = alphabet
-        self.sequences = {}
-        self.find_distances = find_distances
-        self.matrix = DistanceMatrix()
-        if handle is not None:
-            self._load_fasta(handle)
-
-    def _load_fasta(self, handle):
-        '''
-        Load sequences from multi-FASTA and populate DistanceMatrix
-        :param handle: FASTA filehandle
-        '''
-        for record in SeqIO.parse(handle, format='fasta'):
-            self.append(record)
-
-    def __getitem__(self, item):
-        '''
-        Return a sequence with the given ID
-        :param item: sequence ID
-        '''
-        return self.sequences[item]
-
-    def append(self, item):
-        '''
-        Append a sequence to Sequence set and recalculate distance, if needed
-        :param item: SeqRecord object
-        '''
-        if not Alphabet._check_type_compatible([self.alphabet, item._alphabet]):
-            raise TypeError('Incompatible alphabets in input data')
-        self.sequences.update({item.name: item})
-        if self.find_distances:
-            # Protein sequences are aligned with NWalign and scoredist is computed
-            dist_row = [scoredist(item, self[x]) for x in self.matrix.ids]
-            self.matrix.add_row(item.id, dist_row)
-        # elif self.find_distances and isinstance(self.alphabet, Alphabet.NucleotideAlphabet):
-        #     # Nucleotide sequences are aligned with Bio.pairwise2
-        #     pass
-
-
-    def __len__(self):
-        return len(self.sequences)
-
+def make_aminoacid_matrix(fasta_handle):
+    """
+    Create a distance matrix for all sequences within FASTA filehandle
+    Assumes sequences to be all aminoacid
+    :param fasta_handle: filehandle
+    :return: DistanceMatrix
+    """
+    ret = DistanceMatrix()
+    seq_list = []
+    for sequence in SeqIO.parse(fasta_handle, format='fasta'):
+        seq_list.append(sequence)
+    while len(seq_list)>1:
+        sequence1 = seq_list.pop()
+        for sequence2 in seq_list:
+            ret[(sequence1.id, sequence2.id)] = scoredist(sequence1, sequence2)
+    # adding zeros
+    ret[(seq_list[0].id, seq_list[0].id)] = 0.0
+    for x in ret.ids:
+        ret[(x, x)] = 0.0
+    return ret
 
 class DistanceMatrix(object):
     '''
@@ -114,94 +88,112 @@ class DistanceMatrix(object):
         self.matrix = {}
         self.ids = []
         if not handle is None:
-            self.from_handle(handle)
+            self.read(handle)
 
-    def from_handle(self, handle):
-        '''
-        Read distance matrix from filehandle
-        :param handle: filehandle to read from
-        :return:
-        '''
-        line_list = []
-        split_list = []
-        for line in handle:
-            line=line.rstrip('\n')
-            line=line.lstrip(' ')
-            l = line.split(' ')
-            if len(l)>1:
-                try:
-                    float(l[0])
-                    # If the first element is a float, we need to add the line to split_list
-                    # There may be more distances coming for the same sequence
-                    split_list += l
-                except ValueError:
-                    # If the first element is not float, then a new line has started
-                    if len(split_list) > 0:
-                        #  If there is something in split_list, time to dump it
-                        line_list.append(split_list)
-                    #  And start a new split_list with the new line
-                    split_list = l
-        line_list.append(split_list) #  And dump the last split_list once the file is over
-        self.ids = [x[0] for x in line_list]
-        for x in range(len(line_list)):
-            del(line_list[x][0])
-            line_list[x] = [float(j) for j in line_list[x]]
-            #  IDs went to the attribute, no use for them here
-        for seq1_number in range(len(line_list)):
-            for seq2_number in range(len(line_list)):
-            #  Order of the lines & items in line is the same as that of IDs
-            #  Creating both of items to save __getitem__/__setitem__ hassle. Maybe add that later
-                self.matrix[(self.ids[seq1_number], self.ids[seq2_number])] = line_list[seq1_number][seq2_number]
-                self.matrix[(self.ids[seq2_number], self.ids[seq1_number])] = line_list[seq1_number][seq2_number]
+    #  I/O & matrix creation methods
 
-    def to_handle(self, handle):
-        '''
-        Write distance matrix to filehandle
-        :param handle: Filehandle to write matrix to
+    def read(self, filehandle):
+        """
+        Read distance matrix from filehandle. Expects EMBOSS format (upper-right).
+        Works using some voodoo
+        :param filehandle:
         :return:
-        '''
-        handle.write('{0}\n'.format(len(self.ids)))
-        for seqid in self.ids:
-            line = seqid+'\t'+'\t'.join((str(self.matrix[(seqid, x)]) for x in self.ids))+'\n'
-            handle.write(line)
+        """
+        id_dict = {}
+        num_matrix = {}  # Tmp matrix w/numeric IDs
+        for line in filehandle:
+            if '\t' not in line:
+                #  Skip lines that are not tab-separated, headers and such
+                continue
+            line=line.rstrip()
+            # l_arr = re.split('\s+', line)
+            l_arr = line.split('\t')
+            if l_arr[1].lstrip() == '1':
+                #  Skip numbers line, it's useless
+                continue
+            ids = l_arr.pop(-1)
+            (al_id, num_id) = re.split('\s+', ids)
+            num_id = int(num_id)
+            id_dict[num_id] = al_id
+            for num in range(num_id, len(l_arr)-1):
+                num_matrix[(num, num_id)] = float(l_arr[num])
+                num_matrix[(num_id, num)] = float(l_arr[num])
+        #  Changing num_matrix IDs to proper names
+        #  And writing to object
+        for num_id1 in id_dict.keys():
+            for num_id2 in id_dict.keys():
+                if num_id1 != num_id2:
+                    self[(id_dict[num_id1], id_dict[num_id2])] = num_matrix[(num_id1, num_id2)]
+                else:
+                    self[(id_dict[num_id2], id_dict[num_id2])] = 0.0
+
+    def write(self, fh):
+        """
+        Write distance matrix to filehandle using EMBOSS format (upper-right)
+        :param filehandle:
+        :return:
+        """
+        print('Distance matrix\n---------------\n\nReduced by sampler\n', file=fh)
+        print('\t'+'\t'.join(str(x) for x in range(1, len(self.ids)+1)), file=fh)
+        num_code = {self.ids[x-1]: x for x in range(len(self.ids)+1)}
+        for id in self.ids:
+            fh.write('\t'*num_code[id])
+            for x in range(num_code[id]-1, len(self.ids)):
+                fh.write('{0:.2f}'.format(self[(id, self.ids[x])])+'\t')
+            fh.write('\t{0} {1}\n '.format(id, num_code[id]))
 
     def dj(self, final_count):
-        '''
-        Subsample from this distance matrix
-        :param final_count: Number of sequences that should be in a final sample
-        :return: DistanceMatrix object
-        '''
-        if final_count > len(self.matrix):
-            raise ValueError('Cannot sample more sequences than there are in a dataset!')
-        subset = DistanceMatrix()
-        non_sampled = copy.deepcopy(self.ids)
-        max_sum = 0
-        sum_dists = {}
+        """
+        Return a reduced ID list using distant joining algorithm
+        Reduces the initial matrix ID list to final_count elements
+        :param final_count: int
+        :return: list of strings
+        """
+        if final_count > len(self.ids):
+            raise ValueError ('Cannot reduce matrix to more elements than it has')
+        reduced_list = []
+        not_sampled = copy.deepcopy(self.ids)
+        # Finding the initial object that is furthest from all in not_sampled
+        max_dist = 0.0
         leader = None
-        for x in self.ids:
-            sum_dists[x] = sum(self[(x, y)] for y in self.ids if x != y)
-            if sum_dists[x] > max_sum:
-                max_sum = sum_dists[x]
-                leader = x
-        subset.add_row(leader, [])
-        non_sampled.remove(leader)
-        #  We just added the item that is furthest from others as the first item in subsample
-        #  From now on sum_dists is a sum of distances from every element IN SUBSET, starting from first one
-        sum_dists = {x: self[(x, leader)] for x in non_sampled}
-        for j in range(final_count - 1):
-            max_sum = 0
-            for candidate in non_sampled:
-                #  Looking for furthest one again
-                if sum_dists[candidate]>max_sum:
-                    max_sum = sum_dists[candidate]
+        for candidate in not_sampled:
+            dist = sum((self[(candidate, x)] for x in not_sampled))
+            if dist >= max_dist:
+                leader = candidate
+                max_dist = dist
+        not_sampled.remove(leader)
+        reduced_list.append(leader)
+        #  Iterative addition of the elements
+        while len(reduced_list) < final_count:
+            leader = None
+            max_dist = 0.0
+            for candidate in not_sampled:
+                dist = sum((self[(candidate, x)] for x in reduced_list))
+                if dist > max_dist:
                     leader = candidate
-            #  He's in leader now
-            subset.add_row(leader, [self[(leader, x)] for x in subset.ids])
-            non_sampled.remove(leader)
-            for x in non_sampled:
-                sum_dists[x]+=self[(x, leader)]
-        return subset
+                    max_dist = dist
+            not_sampled.remove(leader)
+            reduced_list.append(leader)
+        return reduced_list
 
+    def submatrix(self, ids):
+        """
+        Create a submatrix that contains only the items in the list
+        :param ids: list of strings
+        :return:
+        """
+        ret = DistanceMatrix()
+        id_list = copy.deepcopy(ids)
+        while len(id_list)>1:
+            id = id_list.pop()
+            ret[(id, id)] = 0.0
+            for x in id_list:
+                ret[(id, x)] = self[(id, x)]
+        #  Add zero distance from last element to itself
+        ret[(id_list[0], id_list[0])] = 0.0
+        return ret
+
+    #  Dict-like behaviour
 
     def __getitem__(self, item):
         '''
@@ -209,22 +201,36 @@ class DistanceMatrix(object):
         :param item: a tuple of sequence names
         :return:
         '''
-        return self.matrix[item]
+        assert type(item) is tuple
+        assert len(item) == 2
+        if item in self.keys():
+            return self.matrix[item]
+        elif (item[1], item[0]) in self.keys():
+            return self.matrix[(item[1], item[0])]
+        else:
+            raise KeyError('Invalid matrix key: {0}'.format(item))
 
-    def add_row(self, new_id, dist_list):
+    def __setitem__(self, key, value):
         '''
-        Add a sequence to the matrix
-        :param new_id: sequence id
-        :param dist_list: list of distances to all the other sequences
-        :return:
+        Add an item to the matrix
+        :param key: a 2-item tuple
+        :param item: float
         '''
-        # sys.stderr.write(len(self.ids))
-        #  print('{0} {1}'.format(new_id, ' '.join((str(x) for x in dist_list))))
-        for pos in range(len(self.ids)):
-            self.matrix[(new_id, self.ids[pos])] = dist_list[pos]
-            self.matrix[(self.ids[pos], new_id)] = dist_list[pos]
-        self.matrix[(new_id, new_id)] = 0
-        self.ids.append(new_id)
+        assert type(key) is tuple
+        assert len(key) == 2
+        assert type(value) is float
+        # Check if ID list of matrix is incomplete and correct it, if so
+        if key[0] not in self.ids:
+            self.ids.append(key[0])
+        if key[1] not in self.ids:
+            self.ids.append(key[1])
+        #  Check if there is a place w/oppposite ID order
+        #  Not doing so doubles use of space
+        if (key[1], key[0]) in self.keys():
+            self.matrix[(key[1], key[0])] = value
+            return
+        self.matrix[key] = value
+
 
     def keys(self):
         '''
