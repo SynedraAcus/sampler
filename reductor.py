@@ -163,17 +163,15 @@ class DistanceMatrix(object):
                 max_dist = dist
         not_sampled.remove(leader)
         reduced_list.append(leader)
+        sum_dist = {x: self[(leader, x)] for x in self.ids}
         #  Iterative addition of the elements
         while len(reduced_list) < final_count:
-            leader = None
-            max_dist = 0.0
-            for candidate in not_sampled:
-                dist = sum((self[(candidate, x)] for x in reduced_list))
-                if dist > max_dist:
-                    leader = candidate
-                    max_dist = dist
-            not_sampled.remove(leader)
-            reduced_list.append(leader)
+            leader = max(sum_dist.items(), key=lambda a:a[1])
+            reduced_list.append(leader[0])
+            del sum_dist[leader[0]]
+            not_sampled.remove(leader[0])
+            for i in not_sampled:
+                sum_dist[i] += self[(leader[0], i)]
         return reduced_list
 
     def submatrix(self, ids):
