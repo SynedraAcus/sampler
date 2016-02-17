@@ -120,6 +120,7 @@ class DistanceMatrix(object):
                 num_matrix[(num_id, num)] = float(l_arr[num])
         #  Changing num_matrix IDs to proper names
         #  And writing to object
+        self.ids = list(id_dict.values())
         for num_id1 in id_dict.keys():
             for num_id2 in id_dict.keys():
                 if num_id1 != num_id2:
