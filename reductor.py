@@ -102,12 +102,12 @@ s a FASTA handle and AA/nucleotide boolean as an input, produces DistanceMatrix
         """
         ret = DistanceMatrix()
         seq_list = []
-        for sequence in SeqIO.parse(open(fasta_handle), format='fasta'):
+        for sequence in SeqIO.parse(open(fasta_file), format='fasta'):
             seq_list.append(sequence)
         while len(seq_list)>1:
             sequence1 = seq_list.pop()
             for sequence2 in seq_list:
-                ret[(sequence1.id, sequence2.id)] = scoredist(sequence1, sequence2)
+                ret[(sequence1.id, sequence2.id)] = self._scoredist(fasta_file, sequence1.id, sequence2.id)
         # adding zeros
         ret[(seq_list[0].id, seq_list[0].id)] = 0.0
         for x in ret.ids:
@@ -115,13 +115,11 @@ s a FASTA handle and AA/nucleotide boolean as an input, produces DistanceMatrix
         return ret
         pass
 
-    def create_nucleotide_matrix(self, fasta_file=None):
-        pass
-
     def _scoredist(self, fasta, id1, id2, matrix=matrix, correction=1.337):
         EXPECT = -0.5209
         byte_aln = subprocess.check_output(self.NEEDLE_CALL.format(fasta, id1, id2),
-                                      shell=True)
+                                           shell=True,
+                                           stderr=subprocess.DEVNULL)
         stream = StringIO(byte_aln.decode())
         aln = AlignIO.read(stream, format='fasta')
         score = 0
@@ -139,6 +137,9 @@ s a FASTA handle and AA/nucleotide boolean as an input, produces DistanceMatrix
         sigma_un = (score_a + score_b)/2 - length * EXPECT
         dist = -1*log(sigma_n/sigma_un)*100*correction
         return dist
+
+    def create_nucleotide_matrix(self, fasta_file=None):
+        pass
 
 
 class DistanceMatrix(object):

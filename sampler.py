@@ -24,7 +24,7 @@ if not(args.f or args.d):
 #  DEBUG
 
 m = MatrixFactory()
-print(m._scoredist(args.f, 'Entamoeba_invadens_1', 'Aphanomyces_invadans_1'))
+# print(m._scoredist(args.f, 'Entamoeba_invadens_1', 'Aphanomyces_invadans_1'))
 
 #  READ SEQUENCES IF ANY
 #  EITHER READ OR CALCULATE MATRIX
@@ -36,9 +36,9 @@ if args.f and args.d:
         raise ValueError('Different sequence collections in matrix and FASTA')
 if args.f and not args.d:
     if args.p:
-        with open(args.f) as fasta_fh:
-            distmat = make_aminoacid_matrix(fasta_fh)
-            length = len(distmat.ids)
+        # distmat = make_aminoacid_matrix(args.f)
+        distmat = m.create_aminoacid_matrix(args.f)
+        length = len(distmat.ids)
     else:
         raise NotImplementedError('DNA distance calculation is not yet supported')
 
