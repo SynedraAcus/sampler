@@ -9,16 +9,16 @@ import sys
 arg_parser = argparse.ArgumentParser(description='Reduce sequence dataset using Distant Joining approach')
 arg_parser.add_argument('-f', type=str, help='Fasta file with sequence set to be reduced')
 arg_parser.add_argument('-d', type=str, help='Distance matrix file in PHYLIP lower-triangular format')
-arg_parser.add_argument('-p', type=bool, help='Set to true if using protein sequence set',
-                        default=True)
-arg_parser.add_argument('-n', type=str, help='Number (int) or percentage (float) of sequences to be sampled\nDefault is 0.2',\
+arg_parser.add_argument('-p', help='Set to true if using protein sequence set',
+                        action='store_true')
+arg_parser.add_argument('-n', type=str, help='Number (int) or percentage (float) of sequences to be sampled\nDefault is 0.2',
                         default='0.2')
-arg_parser.add_argument('-i', type=bool, help='Write IDs of reduced set and quit without writing distance matrix or FASTA',
-                        default=False)
-args = arg_parser.parse_args()
+arg_parser.add_argument('-i', help='Write IDs of reduced set and quit without writing distance matrix or FASTA',
+                        action='store_true')
+
 if not(args.f or args.d):
     sys.stderr.write('Either -f or -d option should be used')
-
+    quit()
 
 #  READ SEQUENCES IF ANY
 #  EITHER READ OR CALCULATE MATRIX
@@ -28,12 +28,13 @@ if args.d:
 if args.f and args.d:
     if not sorted(seqs.sequences.keys()) == sorted(distmat.ids):
         raise ValueError('Different sequence collections in matrix and FASTA')
-if args.f and args.p and not args.d:
-    with open(args.f) as fasta_fh:
-        distmat = make_aminoacid_matrix(fasta_fh)
-        length = len(distmat.ids)
-if args.f and not args.p and not args.d:
-    raise NotImplementedError('DNA distance calculation is not yet supported')
+if args.f and not args.d:
+    if args.p:
+        with open(args.f) as fasta_fh:
+            distmat = make_aminoacid_matrix(fasta_fh)
+            length = len(distmat.ids)
+    else:
+        raise NotImplementedError('DNA distance calculation is not yet supported')
 
 
 #  How many sequences do we need?

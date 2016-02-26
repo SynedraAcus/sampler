@@ -84,11 +84,13 @@ class DistanceMatrix(object):
     '''
     Distance matrix class. Contains a list of IDs and a distance matrix for the same IDs
     '''
-    def __init__(self, handle=None):
+    def __init__(self, handle=None, fasta=None):
         self.matrix = {}
         self.ids = []
         if not handle is None:
             self.read(handle)
+        if fasta:
+            self.fasta=fasta
 
     #  I/O & matrix creation methods
 
