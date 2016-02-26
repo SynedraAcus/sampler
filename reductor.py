@@ -7,10 +7,6 @@ import subprocess
 from math import log
 import copy
 import re
-import sys
-########
-NWALIGN = '/home/morozov/tools/NWalign/NWalign' # Location of NWalign software. REMOVE HARDCODE!
-########
 
 #  Converting BLOSUM 62 to square form
 matrix = MatrixInfo.blosum62
@@ -42,7 +38,6 @@ def scoredist(seq1, seq2, matrix=matrix, correction=1.337):
             break # If numeric lines started then all sequence was printed already
         else:
             seqs[j]+=a.rstrip()
-    #print(seqs)
     del lines, sub #Close this stuff
     score = 0
     score_a = 0
@@ -83,10 +78,8 @@ def make_aminoacid_matrix(fasta_handle):
 
 class MatrixFactory(object):
     '''
-    Distance matrix factory. Take        print(aln)
-s a FASTA handle and AA/nucleotide boolean as an input, produces DistanceMatrix
+    Distance matrix factory.
     '''
-    #  EMBOSS call lines defined as class variables
 
     #  needle call line. format(fasta_file, asequenceID, bsequenceID)
     NEEDLE_CALL = 'needle -asequence {0}:{1} -bsequence {0}:{2} -gapopen 10.0 -gapextend 0.5 -aformat3 fasta -outfile stdout'

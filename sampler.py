@@ -17,15 +17,7 @@ arg_parser.add_argument('-i', help='Write IDs of reduced set and quit without wr
                         action='store_true')
 args = arg_parser.parse_args()
 
-# if not(args.f or args.d):
-#     sys.stderr.write('Either -f or -d option should be used\n')
-#     quit()
-
-#  DEBUG
-
-# print(m._scoredist(args.f, 'Entamoeba_invadens_1', 'Aphanomyces_invadans_1'))
-
-#  READ SEQUENCES IF ANY
+#  READ SEQUENCES, IF ANY
 #  EITHER READ OR CALCULATE MATRIX
 if args.d:
     # If matrix was supplied
@@ -75,7 +67,7 @@ if args.i:
             print(x, file=id_handle)
     quit()
 
-#  Assume it's not args.i, so we need to print the rest
+#  It's not args.i, so we need to print the rest
 #  Defining matrix handle
 if not args.d:
     matrix_handle = open('{0}.dist.reduced'.format(args.f), mode='w')
