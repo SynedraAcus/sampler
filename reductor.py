@@ -102,7 +102,7 @@ s a FASTA handle and AA/nucleotide boolean as an input, produces DistanceMatrix
         :param id2: ID of sequence 2
         :return: Bio.Align instance
         '''
-        byte_aln = subprocess.check_output(self.NEEDLE_CALL.format(fasta, id1, id2),
+        byte_aln = subprocess.check_output(self.NEEDLE_CALL.format(fasta_file, id1, id2),
                                            shell=True,
                                            stderr=subprocess.DEVNULL)
         stream = StringIO(byte_aln.decode())
@@ -133,7 +133,7 @@ s a FASTA handle and AA/nucleotide boolean as an input, produces DistanceMatrix
 
     def _scoredist(self, fasta, id1, id2, matrix=matrix, correction=1.337):
         EXPECT = -0.5209
-        self._build_alignment(fasta, id1, id2)
+        aln = self._build_alignment(fasta, id1, id2)
         score = 0
         score_a = 0
         score_b = 0

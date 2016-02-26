@@ -23,7 +23,6 @@ args = arg_parser.parse_args()
 
 #  DEBUG
 
-m = MatrixFactory()
 # print(m._scoredist(args.f, 'Entamoeba_invadens_1', 'Aphanomyces_invadans_1'))
 
 #  READ SEQUENCES IF ANY
@@ -33,17 +32,21 @@ if args.d:
     distmat = DistanceMatrix(handle=open(args.d))
     length = len(distmat.ids)  #  Yes, I could've given matrix __len__
     if args.f:
-        if not sorted(seqs.sequences.keys()) == sorted(distmat.ids):
+        # Check that the same sequences are in matrix and FASTA file
+        fasta_ids = [x.id for x in SeqIO.parse(open(args.f), format='fasta')]
+        if not sorted(fasta_ids) == sorted(distmat.ids):
             raise ValueError('Different sequence collections in matrix and FASTA')
 elif args.f:
+    m = MatrixFactory()
+    # Build matrix
     if args.p:
-        # distmat = make_aminoacid_matrix(args.f)
         distmat = m.create_aminoacid_matrix(args.f)
-        length = len(distmat.ids)
     else:
-        raise NotImplementedError('DNA distance calculation is not yet supported')
+        distmat = m.create_nucleotide_matrix(args.f)
+    length = len(distmat.ids)
 else:
-    sys.stderr.write('At least one of -f or -d should be used.')
+    sys.stderr.write('At least one of -f or -d should be used.\n')
+    quit()
 
 
 #  How many sequences do we need?
