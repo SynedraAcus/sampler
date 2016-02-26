@@ -24,7 +24,7 @@ if not(args.f or args.d):
 #  DEBUG
 
 m = MatrixFactory()
-m._scoredist(args.f, 'Entamoeba_invadens_1', 'Aspergillus_fumigatus6')
+print(m._scoredist(args.f, 'Entamoeba_invadens_1', 'Aphanomyces_invadans_1'))
 
 #  READ SEQUENCES IF ANY
 #  EITHER READ OR CALCULATE MATRIX

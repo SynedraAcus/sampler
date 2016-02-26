@@ -1,7 +1,8 @@
 __author__ = 'morozov'
 
-from Bio import SeqIO, Alphabet
+from Bio import SeqIO, Alphabet, AlignIO
 from Bio.SubsMat import MatrixInfo
+from io import StringIO
 import subprocess
 from math import log
 import copy
@@ -82,7 +83,8 @@ def make_aminoacid_matrix(fasta_handle):
 
 class MatrixFactory(object):
     '''
-    Distance matrix factory. Takes a FASTA handle and AA/nucleotide boolean as an input, produces DistanceMatrix
+    Distance matrix factory. Take        print(aln)
+s a FASTA handle and AA/nucleotide boolean as an input, produces DistanceMatrix
     '''
     #  EMBOSS call lines defined as class variables
 
@@ -117,9 +119,26 @@ class MatrixFactory(object):
         pass
 
     def _scoredist(self, fasta, id1, id2, matrix=matrix, correction=1.337):
-        aln = subprocess.check_output(self.NEEDLE_CALL.format(fasta, id1, id2),
+        EXPECT = -0.5209
+        byte_aln = subprocess.check_output(self.NEEDLE_CALL.format(fasta, id1, id2),
                                       shell=True)
-        print(aln)
+        stream = StringIO(byte_aln.decode())
+        aln = AlignIO.read(stream, format='fasta')
+        score = 0
+        score_a = 0
+        score_b = 0
+        length = 0
+        for col in range(len(aln[0])):
+            if '-' in aln[:, col]:
+                continue  # Ignore gapped columns
+            score_a += matrix[(aln[0][col], aln[0][col])]
+            score_b += matrix[(aln[1][col], aln[1][col])]
+            score += matrix[(aln[1][col], aln[0][col])]
+            length += 1.0
+        sigma_n = score - length * EXPECT
+        sigma_un = (score_a + score_b)/2 - length * EXPECT
+        dist = -1*log(sigma_n/sigma_un)*100*correction
+        return dist
 
 
 class DistanceMatrix(object):
