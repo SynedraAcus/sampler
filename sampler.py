@@ -15,10 +15,16 @@ arg_parser.add_argument('-n', type=str, help='Number (int) or percentage (float)
                         default='0.2')
 arg_parser.add_argument('-i', help='Write IDs of reduced set and quit without writing distance matrix or FASTA',
                         action='store_true')
+args = arg_parser.parse_args()
 
 if not(args.f or args.d):
     sys.stderr.write('Either -f or -d option should be used')
     quit()
+
+#  DEBUG
+
+m = MatrixFactory()
+m._scoredist(args.f, 'Entamoeba_invadens_1', 'Aspergillus_fumigatus6')
 
 #  READ SEQUENCES IF ANY
 #  EITHER READ OR CALCULATE MATRIX

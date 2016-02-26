@@ -84,14 +84,42 @@ class MatrixFactory(object):
     '''
     Distance matrix factory. Takes a FASTA handle and AA/nucleotide boolean as an input, produces DistanceMatrix
     '''
+    #  EMBOSS call lines defined as class variables
+
+    #  needle call line. format(fasta_file, asequenceID, bsequenceID)
+    NEEDLE_CALL = 'needle -asequence {0}:{1} -bsequence {0}:{2} -gapopen 10.0 -gapextend 0.5 -aformat3 fasta -outfile stdout'
     def __init__(self):
         pass
 
     def create_aminoacid_matrix(self, fasta_file=None):
+        """
+        Create a distance matrix for all sequences within FASTA filehandle
+        Assumes sequences to be all aminoacid
+        :param fasta_file: FASTA filename
+        :return: DistanceMatrix
+        """
+        ret = DistanceMatrix()
+        seq_list = []
+        for sequence in SeqIO.parse(open(fasta_handle), format='fasta'):
+            seq_list.append(sequence)
+        while len(seq_list)>1:
+            sequence1 = seq_list.pop()
+            for sequence2 in seq_list:
+                ret[(sequence1.id, sequence2.id)] = scoredist(sequence1, sequence2)
+        # adding zeros
+        ret[(seq_list[0].id, seq_list[0].id)] = 0.0
+        for x in ret.ids:
+            ret[(x, x)] = 0.0
+        return ret
         pass
 
     def create_nucleotide_matrix(self, fasta_file=None):
         pass
+
+    def _scoredist(self, fasta, id1, id2, matrix=matrix, correction=1.337):
+        aln = subprocess.check_output(self.NEEDLE_CALL.format(fasta, id1, id2),
+                                      shell=True)
+        print(aln)
 
 
 class DistanceMatrix(object):
