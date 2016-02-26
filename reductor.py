@@ -80,17 +80,29 @@ def make_aminoacid_matrix(fasta_handle):
         ret[(x, x)] = 0.0
     return ret
 
+class MatrixFactory(object):
+    '''
+    Distance matrix factory. Takes a FASTA handle and AA/nucleotide boolean as an input, produces DistanceMatrix
+    '''
+    def __init__(self):
+        pass
+
+    def create_aminoacid_matrix(self, fasta_file=None):
+        pass
+
+    def create_nucleotide_matrix(self, fasta_file=None):
+        pass
+
+
 class DistanceMatrix(object):
     '''
     Distance matrix class. Contains a list of IDs and a distance matrix for the same IDs
     '''
-    def __init__(self, handle=None, fasta=None):
+    def __init__(self, handle=None):
         self.matrix = {}
         self.ids = []
         if not handle is None:
             self.read(handle)
-        if fasta:
-            self.fasta=fasta
 
     #  I/O & matrix creation methods
 
