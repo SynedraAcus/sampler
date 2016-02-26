@@ -4,7 +4,7 @@ Sampler takes a multi-FASTA (not an alignment!) or an EMBOSS-formatted
 distance matrix and samples a requested number of sequences from it,
 trying to be as taxonomically comprehensive as possible. If a FASTA file
 is supplied, the distances are calculated by Scoredist metric.
-Returns a reduced matrix or FASTA file, depending on what was supplied
+Returns a reduced distance matrix and, if possible, reduced FASTA file.
 
 Options:
 -f Multi-FASTA file
@@ -16,11 +16,15 @@ Options:
 Dependencies:
 Python 3.4 or higher
 Biopython
-NWALIGN
+EMBOSS 6.6.0.0
 
+Installation notes:
+
+Make sure EMBOSS needle is available in your $PATH. If it is not
+possible (but you do have EMBOSS installed), add EMBOSS/bin directory
+path to the NEEDLE_CALL variable in reductor.py
+
+LICENSING
 The software is distributed under the terms of CC-BY 4.0 license.
 The complete text of the license is available at:
 https://creativecommons.org/licenses/by/4.0/legalcode
-################################
-Temporary note: set NWALIGN variable in reductor.py to the location of the Fortran
-aligner. In some later release I'll throw it into distribution.
