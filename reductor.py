@@ -93,6 +93,22 @@ s a FASTA handle and AA/nucleotide boolean as an input, produces DistanceMatrix
     def __init__(self):
         pass
 
+    def _build_alignment(self, fasta_file, id1, id2):
+        '''
+        Internal function that calls EMBOSS needle on the default params to build
+        a pairwise alignment
+        :param fasta_file: FASTA filename
+        :param id1: ID of sequence 1
+        :param id2: ID of sequence 2
+        :return: Bio.Align instance
+        '''
+        byte_aln = subprocess.check_output(self.NEEDLE_CALL.format(fasta, id1, id2),
+                                           shell=True,
+                                           stderr=subprocess.DEVNULL)
+        stream = StringIO(byte_aln.decode())
+        aln = AlignIO.read(stream, format='fasta')
+        return aln
+
     def create_aminoacid_matrix(self, fasta_file=None):
         """
         Create a distance matrix for all sequences within FASTA filehandle
@@ -117,11 +133,7 @@ s a FASTA handle and AA/nucleotide boolean as an input, produces DistanceMatrix
 
     def _scoredist(self, fasta, id1, id2, matrix=matrix, correction=1.337):
         EXPECT = -0.5209
-        byte_aln = subprocess.check_output(self.NEEDLE_CALL.format(fasta, id1, id2),
-                                           shell=True,
-                                           stderr=subprocess.DEVNULL)
-        stream = StringIO(byte_aln.decode())
-        aln = AlignIO.read(stream, format='fasta')
+        self._build_alignment(fasta, id1, id2)
         score = 0
         score_a = 0
         score_b = 0
@@ -138,8 +150,43 @@ s a FASTA handle and AA/nucleotide boolean as an input, produces DistanceMatrix
         dist = -1*log(sigma_n/sigma_un)*100*correction
         return dist
 
+    #  This differs from create_aminoacid_matrix only in the function used.
+    #  These two methods should be refactored into a single one
     def create_nucleotide_matrix(self, fasta_file=None):
+        '''
+        Return a Distance Matrix built for all the DNA sequences in fasta_file
+        :param fasta_file: FASTA filename
+        :return: DistanceMatrix
+        '''
+        ret = DistanceMatrix()
+        seq_list = []
+        for sequence in SeqIO.parse(open(fasta_file), format='fasta'):
+            seq_list.append(sequence)
+        while len(seq_list)>1:
+            sequence1 = seq_list.pop()
+            for sequence2 in seq_list:
+                ret[(sequence1.id, sequence2.id)] = self._kimura(fasta_file, sequence1.id, sequence2.id)
+        # adding zeros
+        ret[(seq_list[0].id, seq_list[0].id)] = 0.0
+        for x in ret.ids:
+            ret[(x, x)] = 0.0
+        return ret
         pass
+
+    def _kimura(self, fasta, id1, id2):
+        aln = self._build_alignment(fasta, id1, id2)
+        p = 0
+        q = 0
+        transition_sets=[set('A', 'T'), set('C', 'G')]
+        for col in range(len(aln[0])):
+            if set((aln[0][col], aln[1][col])) in transition_sets:
+                p += 1
+            else:
+                q += 1
+        w1 = 1 - 2*p - q
+        w2 = 1 - 2*q
+        d = log(w1)/2.0 - log(w2)/4.0
+        return d
 
 
 class DistanceMatrix(object):

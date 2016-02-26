@@ -17,9 +17,9 @@ arg_parser.add_argument('-i', help='Write IDs of reduced set and quit without wr
                         action='store_true')
 args = arg_parser.parse_args()
 
-if not(args.f or args.d):
-    sys.stderr.write('Either -f or -d option should be used')
-    quit()
+# if not(args.f or args.d):
+#     sys.stderr.write('Either -f or -d option should be used\n')
+#     quit()
 
 #  DEBUG
 
@@ -29,18 +29,21 @@ m = MatrixFactory()
 #  READ SEQUENCES IF ANY
 #  EITHER READ OR CALCULATE MATRIX
 if args.d:
+    # If matrix was supplied
     distmat = DistanceMatrix(handle=open(args.d))
     length = len(distmat.ids)  #  Yes, I could've given matrix __len__
-if args.f and args.d:
-    if not sorted(seqs.sequences.keys()) == sorted(distmat.ids):
-        raise ValueError('Different sequence collections in matrix and FASTA')
-if args.f and not args.d:
+    if args.f:
+        if not sorted(seqs.sequences.keys()) == sorted(distmat.ids):
+            raise ValueError('Different sequence collections in matrix and FASTA')
+elif args.f:
     if args.p:
         # distmat = make_aminoacid_matrix(args.f)
         distmat = m.create_aminoacid_matrix(args.f)
         length = len(distmat.ids)
     else:
         raise NotImplementedError('DNA distance calculation is not yet supported')
+else:
+    sys.stderr.write('At least one of -f or -d should be used.')
 
 
 #  How many sequences do we need?
