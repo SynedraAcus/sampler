@@ -113,6 +113,8 @@ class MatrixFactory(object):
         seq_list = []
         for sequence in SeqIO.parse(open(fasta_file), format='fasta'):
             seq_list.append(sequence)
+        ret.init_nd(len(seq_list))
+        ret.indices = {seq_list[x].id: x for x in range(len(seq_list))}
         while len(seq_list)>1:
             sequence1 = seq_list.pop()
             for sequence2 in seq_list:
@@ -155,6 +157,8 @@ class MatrixFactory(object):
         seq_list = []
         for sequence in SeqIO.parse(open(fasta_file), format='fasta'):
             seq_list.append(sequence)
+        ret.init_nd(len(seq_list))
+        ret.indices = {seq_list[x].id: x for x in range(len(seq_list))}
         while len(seq_list)>1:
             sequence1 = seq_list.pop()
             for sequence2 in seq_list:
@@ -181,7 +185,7 @@ class MatrixFactory(object):
         d = log(w1)/2.0 - log(w2)/4.0
         return d
 
-
+import numpy as np
 class DistanceMatrix(object):
     '''
     Distance matrix class. Contains a list of IDs and a distance matrix for the same IDs
@@ -189,9 +193,17 @@ class DistanceMatrix(object):
     def __init__(self, handle=None):
         self.matrix = {}
         self.ids = []
+        #  ID-to-index dictionary
+        self.indices={}
+        #  ndarray with the matrix itself. As it cannot be defined before we know how many sequences there are,
+        #  the attribute is declared with None. Actually defining array and loading data is done by factory
+        self.array = None
         if not handle is None:
             self.read(handle)
 
+    def init_nd(self, size):
+        self.array = np.empty(shape=(size, size), dtype=np.float32)
+        self.array.fill(np.nan)
     #  I/O & matrix creation methods
 
     def read(self, filehandle):
@@ -284,6 +296,7 @@ class DistanceMatrix(object):
         :return:
         """
         ret = DistanceMatrix()
+        ret.init_nd(len(ids))
         id_list = copy.deepcopy(ids)
         while len(id_list)>1:
             id = id_list.pop()
@@ -304,12 +317,17 @@ class DistanceMatrix(object):
         '''
         assert type(item) is tuple
         assert len(item) == 2
-        if item in self.keys():
-            return self.matrix[item]
-        elif (item[1], item[0]) in self.keys():
-            return self.matrix[(item[1], item[0])]
+        index = [self.indices[x] for x in item]
+        if np.isnan(self.array[index[0], index[1]]):
+            return self.array[index[1], index[0]]
         else:
-            raise KeyError('Invalid matrix key: {0}'.format(item))
+            return self.array[index[0], index[1]]
+        # if item in self.keys():
+        #     return self.matrix[item]
+        # elif (item[1], item[0]) in self.keys():
+        #     return self.matrix[(item[1], item[0])]
+        # else:
+        #     raise KeyError('Invalid matrix key: {0}'.format(item))
 
     def __setitem__(self, key, value):
         '''
@@ -319,18 +337,24 @@ class DistanceMatrix(object):
         '''
         assert type(key) is tuple
         assert len(key) == 2
-        assert type(value) is float
+        # assert type(value) is float
         # Check if ID list of matrix is incomplete and correct it, if so
         if key[0] not in self.ids:
             self.ids.append(key[0])
         if key[1] not in self.ids:
             self.ids.append(key[1])
-        #  Check if there is a place w/oppposite ID order
-        #  Not doing so doubles use of space
-        if (key[1], key[0]) in self.keys():
-            self.matrix[(key[1], key[0])] = value
-            return
-        self.matrix[key] = value
+        # Check if self.indices is incomplete
+        if key[0] not in self.indices.keys():
+            self.indices.update({key[0]: len(self.indices.keys())})
+        if key[1] not in self.indices.keys():
+            self.indices.update({key[1]: len(self.indices.keys())})
+        self.array[self.indices[key[0]], self.indices[key[1]]] = value
+        # #  Check if there is a place w/oppposite ID order
+        # #  Not doing so doubles use of space
+        # if (key[1], key[0]) in self.keys():
+        #     self.matrix[(key[1], key[0])] = value
+        #     return
+        # self.matrix[key] = value
 
 
     def keys(self):
