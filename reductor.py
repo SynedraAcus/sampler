@@ -2,6 +2,7 @@ __author__ = 'morozov'
 
 from Bio import SeqIO, Alphabet, AlignIO
 from Bio.SubsMat import MatrixInfo
+import numpy as np
 from io import StringIO
 import subprocess
 from math import log
@@ -55,27 +56,6 @@ def scoredist(seq1, seq2, matrix=matrix, correction=1.337):
     dist = -1*log(sigma_n/sigma_un)*100*correction
     return dist
 
-def make_aminoacid_matrix(fasta_handle):
-    """
-    Create a distance matrix for all sequences within FASTA filehandle
-    Assumes sequences to be all aminoacid
-    :param fasta_handle: filehandle
-    :return: DistanceMatrix
-    """
-    ret = DistanceMatrix()
-    seq_list = []
-    for sequence in SeqIO.parse(fasta_handle, format='fasta'):
-        seq_list.append(sequence)
-    while len(seq_list)>1:
-        sequence1 = seq_list.pop()
-        for sequence2 in seq_list:
-            ret[(sequence1.id, sequence2.id)] = scoredist(sequence1, sequence2)
-    # adding zeros
-    ret[(seq_list[0].id, seq_list[0].id)] = 0.0
-    for x in ret.ids:
-        ret[(x, x)] = 0.0
-    return ret
-
 class MatrixFactory(object):
     '''
     Distance matrix factory.
@@ -85,6 +65,42 @@ class MatrixFactory(object):
     NEEDLE_CALL = 'needle -asequence {0}:{1} -bsequence {0}:{2} -gapopen 10.0 -gapextend 0.5 -aformat3 fasta -outfile stdout'
     def __init__(self):
         pass
+
+    def read(self, filehandle):
+        """
+        Read distance matrix from filehandle. Expects EMBOSS format (upper-right).
+        Works using some voodoo
+        :param filehandle:
+        :return:
+        """
+        ret = DistanceMatrix()
+        id_dict = {}
+        num_matrix = {}  # Tmp matrix w/numeric IDs
+        for line in filehandle:
+            if '\t' not in line:
+                #  Skip lines that are not tab-separated, headers and such
+                continue
+            line=line.rstrip()
+            l_arr = line.split('\t')
+            if l_arr[1].lstrip() == '1':
+                #  Skip numbers line, it's useless
+                continue
+            ids = l_arr.pop(-1)
+            (al_id, num_id) = re.split('\s+', ids)
+            num_id = int(num_id)
+            id_dict[num_id] = al_id
+            for num in range(num_id, len(l_arr)-1):
+                num_matrix[(num, num_id)] = float(l_arr[num])
+                num_matrix[(num_id, num)] = float(l_arr[num])
+        #  Changing num_matrix IDs to proper names
+        #  And writing to object
+        self.ids = list(id_dict.values())
+        for num_id1 in id_dict.keys():
+            for num_id2 in id_dict.keys():
+                if num_id1 != num_id2:
+                    self[(id_dict[num_id1], id_dict[num_id2])] = num_matrix[(num_id1, num_id2)]
+                else:
+                    self[(id_dict[num_id2], id_dict[num_id2])] = 0.0
 
     def _build_alignment(self, fasta_file, id1, id2):
         '''
@@ -185,7 +201,6 @@ class MatrixFactory(object):
         d = log(w1)/2.0 - log(w2)/4.0
         return d
 
-import numpy as np
 class DistanceMatrix(object):
     '''
     Distance matrix class. Contains a list of IDs and a distance matrix for the same IDs
@@ -205,42 +220,6 @@ class DistanceMatrix(object):
         self.array = np.empty(shape=(size, size), dtype=np.float32)
         self.array.fill(np.nan)
     #  I/O & matrix creation methods
-
-    def read(self, filehandle):
-        """
-        Read distance matrix from filehandle. Expects EMBOSS format (upper-right).
-        Works using some voodoo
-        :param filehandle:
-        :return:
-        """
-        id_dict = {}
-        num_matrix = {}  # Tmp matrix w/numeric IDs
-        for line in filehandle:
-            if '\t' not in line:
-                #  Skip lines that are not tab-separated, headers and such
-                continue
-            line=line.rstrip()
-            # l_arr = re.split('\s+', line)
-            l_arr = line.split('\t')
-            if l_arr[1].lstrip() == '1':
-                #  Skip numbers line, it's useless
-                continue
-            ids = l_arr.pop(-1)
-            (al_id, num_id) = re.split('\s+', ids)
-            num_id = int(num_id)
-            id_dict[num_id] = al_id
-            for num in range(num_id, len(l_arr)-1):
-                num_matrix[(num, num_id)] = float(l_arr[num])
-                num_matrix[(num_id, num)] = float(l_arr[num])
-        #  Changing num_matrix IDs to proper names
-        #  And writing to object
-        self.ids = list(id_dict.values())
-        for num_id1 in id_dict.keys():
-            for num_id2 in id_dict.keys():
-                if num_id1 != num_id2:
-                    self[(id_dict[num_id1], id_dict[num_id2])] = num_matrix[(num_id1, num_id2)]
-                else:
-                    self[(id_dict[num_id2], id_dict[num_id2])] = 0.0
 
     def write(self, fh):
         """
