@@ -70,11 +70,11 @@ class MatrixFactory(object):
         """
         Read distance matrix from filehandle. Expects EMBOSS format (upper-right).
         Works using some voodoo
-        :param filehandle:
-        :return:
+        :param filehandle: Filehandle
+        :return: DistanceMatrix
         """
         ret = DistanceMatrix()
-        id_dict = {}
+        # id_dict = {}
         num_matrix = {}  # Tmp matrix w/numeric IDs
         for line in filehandle:
             if '\t' not in line:
@@ -83,24 +83,23 @@ class MatrixFactory(object):
             line=line.rstrip()
             l_arr = line.split('\t')
             if l_arr[1].lstrip() == '1':
-                #  Skip numbers line, it's useless
+                #  Counts start with 1, not zero. This is not important, as we can use any numeric IDS so long as we
+                #  write matrix.indices correctly
+                array_size = l_arr[-1]
+                ret.init_nd(int(array_size)+1)
+                # ID line should be used only once, to define the array size. The rest of procedure is a dist parser
                 continue
+            #  Get item ID from the last element and add it to distance matrix 'indices' property
             ids = l_arr.pop(-1)
             (al_id, num_id) = re.split('\s+', ids)
             num_id = int(num_id)
-            id_dict[num_id] = al_id
+            ret.indices[al_id] = num_id
+            # id_dict[num_id] = al_id
             for num in range(num_id, len(l_arr)-1):
+                ret.array[num, num_id] = float(l_arr[num])
                 num_matrix[(num, num_id)] = float(l_arr[num])
                 num_matrix[(num_id, num)] = float(l_arr[num])
-        #  Changing num_matrix IDs to proper names
-        #  And writing to object
-        self.ids = list(id_dict.values())
-        for num_id1 in id_dict.keys():
-            for num_id2 in id_dict.keys():
-                if num_id1 != num_id2:
-                    self[(id_dict[num_id1], id_dict[num_id2])] = num_matrix[(num_id1, num_id2)]
-                else:
-                    self[(id_dict[num_id2], id_dict[num_id2])] = 0.0
+        return ret
 
     def _build_alignment(self, fasta_file, id1, id2):
         '''
