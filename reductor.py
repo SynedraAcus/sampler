@@ -205,8 +205,6 @@ class DistanceMatrix(object):
     Distance matrix class. Contains a list of IDs and a distance matrix for the same IDs
     '''
     def __init__(self, handle=None):
-        self.matrix = {}
-        self.ids = []
         #  ID-to-index dictionary
         self.indices={}
         #  ndarray with the matrix itself. As it cannot be defined before we know how many sequences there are,
@@ -227,12 +225,14 @@ class DistanceMatrix(object):
         :return:
         """
         print('Distance matrix\n---------------\n\nReduced by sampler\n', file=fh)
-        print('\t'+'\t'.join(str(x) for x in range(1, len(self.ids)+1)), file=fh)
-        num_code = {self.ids[x-1]: x for x in range(len(self.ids)+1)}
-        for id in self.ids:
+        #  The following is a relic from the time when there was a self.ids list attribute, and probably should be rewritten
+        ids = list(self.indices.keys())
+        print('\t'+'\t'.join(str(x) for x in range(1, len(ids)+1)), file=fh)
+        num_code = {ids[x-1]: x for x in range(len(ids)+1)}
+        for id in ids:
             fh.write('\t'*num_code[id])
-            for x in range(num_code[id]-1, len(self.ids)):
-                fh.write('{0:.2f}'.format(self[(id, self.ids[x])])+'\t')
+            for x in range(num_code[id]-1, len(ids)):
+                fh.write('{0:.2f}'.format(self[(id, ids[x])])+'\t')
             fh.write('\t{0} {1}\n '.format(id, num_code[id]))
 
     def dj(self, final_count):
@@ -242,10 +242,10 @@ class DistanceMatrix(object):
         :param final_count: int
         :return: list of strings
         """
-        if final_count > len(self.ids):
+        if final_count > len(self.indices.keys()):
             raise ValueError ('Cannot reduce matrix to more elements than it has')
         reduced_list = []
-        not_sampled = copy.deepcopy(self.ids)
+        not_sampled = list(self.indices.keys())
         # Finding the initial object that is furthest from all in not_sampled
         max_dist = 0.0
         leader = None
@@ -256,7 +256,7 @@ class DistanceMatrix(object):
                 max_dist = dist
         not_sampled.remove(leader)
         reduced_list.append(leader)
-        sum_dist = {x: self[(leader, x)] for x in self.ids}
+        sum_dist = {x: self[(leader, x)] for x in self.indices.keys()}
         #  Iterative addition of the elements
         while len(reduced_list) < final_count:
             leader = max(sum_dist.items(), key=lambda a:a[1])
@@ -327,17 +327,3 @@ class DistanceMatrix(object):
         if key[1] not in self.indices.keys():
             self.indices.update({key[1]: len(self.indices.keys())})
         self.array[self.indices[key[0]], self.indices[key[1]]] = value
-        # #  Check if there is a place w/oppposite ID order
-        # #  Not doing so doubles use of space
-        # if (key[1], key[0]) in self.keys():
-        #     self.matrix[(key[1], key[0])] = value
-        #     return
-        # self.matrix[key] = value
-
-
-    def keys(self):
-        '''
-        Return the list of sequence pairs in this matrix object
-        :return: A list of tuples
-        '''
-        return self.matrix.keys()
