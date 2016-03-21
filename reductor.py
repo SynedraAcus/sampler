@@ -300,12 +300,6 @@ class DistanceMatrix(object):
             return self.array[index[1], index[0]]
         else:
             return self.array[index[0], index[1]]
-        # if item in self.keys():
-        #     return self.matrix[item]
-        # elif (item[1], item[0]) in self.keys():
-        #     return self.matrix[(item[1], item[0])]
-        # else:
-        #     raise KeyError('Invalid matrix key: {0}'.format(item))
 
     def __setitem__(self, key, value):
         '''
@@ -316,12 +310,6 @@ class DistanceMatrix(object):
         assert type(key) is tuple
         assert len(key) == 2
         # assert type(value) is float
-        # Check if ID list of matrix is incomplete and correct it, if so
-        if key[0] not in self.ids:
-            self.ids.append(key[0])
-        if key[1] not in self.ids:
-            self.ids.append(key[1])
-        # Check if self.indices is incomplete
         if key[0] not in self.indices.keys():
             self.indices.update({key[0]: len(self.indices.keys())})
         if key[1] not in self.indices.keys():
