@@ -9,14 +9,16 @@ Returns a reduced distance matrix and, if possible, reduced FASTA file.
 Options:
 -f Multi-FASTA file
 -d PHYLIP-formatted square distance matrix
--n Number or percentage of sequences to sample
+-n Number (int) or proportion (float) of sequences to sample
 -p FASTA contains aminoacid sequences. Defaults to True
--i Print only IDs of selected sequences
+-i Print only IDs of selected sequences. Defaults to False
 
 Dependencies:
-Python 3.4 or higher
+
 Biopython
 EMBOSS 6.6.0.0
+numpy (tested on 1.8.2 but should probably work on older versions)
+Python 3
 
 Installation notes:
 
