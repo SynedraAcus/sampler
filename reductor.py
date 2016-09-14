@@ -177,7 +177,7 @@ class MatrixFactory(object):
         while len(seq_list)>1:
             sequence1 = seq_list.pop()
             for sequence2 in seq_list:
-                ret[(sequence1.id, sequence2.id)] = self._kimura(fasta_file, sequence1.id, sequence2.id)
+                ret[(sequence1.id, sequence2.id)] = self._kimura(fasta_file, sequence1.description, sequence2.description)
         # adding zeros
         ret[(seq_list[0].id, seq_list[0].id)] = 0.0
         for x in ret.ids:
