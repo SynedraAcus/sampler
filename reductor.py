@@ -110,7 +110,12 @@ class MatrixFactory(object):
         :param id2: ID of sequence 2
         :return: Bio.Align instance
         '''
-        byte_aln = subprocess.check_output(self.NEEDLE_CALL.format(fasta_file, id1, id2),
+        screened_id1=re.sub(r'([\|\[\]\\\/ ])', lambda a: '\{}'.format(a.groups(1)[0]), id1)
+        screened_id2=re.sub(r'([\|\[\]\\\/ ])', lambda a: '\{}'.format(a.groups(1)[0]), id2)
+        call = self.NEEDLE_CALL.format(fasta_file, screened_id1, screened_id2)
+        # print(screened_call)
+        # quit()
+        byte_aln = subprocess.check_output(call,
                                            shell=True,
                                            stderr=subprocess.DEVNULL)
         stream = StringIO(byte_aln.decode())
@@ -133,7 +138,8 @@ class MatrixFactory(object):
         while len(seq_list)>1:
             sequence1 = seq_list.pop()
             for sequence2 in seq_list:
-                ret[(sequence1.id, sequence2.id)] = self._scoredist(fasta_file, sequence1.id, sequence2.id)
+                ret[(sequence1.description, sequence2.description)] =\
+                    self._scoredist(fasta_file, sequence1.description, sequence2.description)
         # adding zeros
         ret[(seq_list[0].id, seq_list[0].id)] = 0.0
         for x in ret.ids:
