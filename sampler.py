@@ -19,17 +19,17 @@ args = arg_parser.parse_args()
 
 #  READ SEQUENCES, IF ANY
 #  EITHER READ OR CALCULATE MATRIX
+m = MatrixFactory()
 if args.d:
     # If matrix was supplied
-    distmat = DistanceMatrix(handle=open(args.d))
-    length = len(distmat.ids)  #  Yes, I could've given matrix __len__
+    distmat = m.read(open(args.d))
+    length = len(distmat.indices.keys())  #  Yes, I could've given matrix __len__
     if args.f:
         # Check that the same sequences are in matrix and FASTA file
         fasta_ids = [x.id for x in SeqIO.parse(open(args.f), format='fasta')]
-        if not sorted(fasta_ids) == sorted(distmat.ids):
+        if not sorted(fasta_ids) == sorted(distmat.indices.keys()):
             raise ValueError('Different sequence collections in matrix and FASTA')
 elif args.f:
-    m = MatrixFactory()
     # Build matrix
     if args.p:
         distmat = m.create_aminoacid_matrix(args.f)
