@@ -249,13 +249,13 @@ class DistanceMatrix(object):
         :return: list of strings
         """
         if final_count > len(self.indices.keys()):
-            raise ValueError ('Cannot reduce matrix to more elements than it has')
+            raise ValueError('Cannot reduce matrix to more elements than it has')
         reduced_list = []
         not_sampled = list(self.indices.keys())
         # Finding the initial object that is furthest from all in not_sampled
         max_dist = 0.0
-        leader = None
-        for candidate in not_sampled:
+        leader = not_sampled[0]
+        for candidate in not_sampled[1:]:
             dist = sum((self[(candidate, x)] for x in not_sampled))
             if dist >= max_dist:
                 leader = candidate
@@ -265,7 +265,7 @@ class DistanceMatrix(object):
         sum_dist = {x: self[(leader, x)] for x in self.indices.keys()}
         #  Iterative addition of the elements
         while len(reduced_list) < final_count:
-            leader = max(sum_dist.items(), key=lambda a:a[1])
+            leader = max(sum_dist.items(), key=lambda a: a[1])
             reduced_list.append(leader[0])
             del sum_dist[leader[0]]
             not_sampled.remove(leader[0])
