@@ -7,13 +7,13 @@ from reductor import *
 import sys
 
 arg_parser = argparse.ArgumentParser(description='Reduce sequence dataset using Distant Joining approach')
-arg_parser.add_argument('-f', type=str, help='Fasta file with sequence set to be reduced')
+arg_parser.add_argument('-f', type=str, help='Fasta file with the sequence set to be reduced')
 arg_parser.add_argument('-d', type=str, help='Distance matrix file in PHYLIP lower-triangular format')
-arg_parser.add_argument('-p', help='Set to true if using protein sequence set',
+arg_parser.add_argument('-p', help='Using protein sequence set. Defaults to False',
                         action='store_true')
-arg_parser.add_argument('-n', type=str, help='Number (int) or percentage (float) of sequences to be sampled\nDefault is 0.2',
+arg_parser.add_argument('-n', type=str, help='Number (int) or percentage (float) of sequences to be sampled\nDefaults to 0.2',
                         default='0.2')
-arg_parser.add_argument('-i', help='Write IDs of reduced set and quit without writing distance matrix or FASTA',
+arg_parser.add_argument('-i', help='Write IDs of reduced set and quit without writing distance matrix or FASTA\nDefaults to False',
                         action='store_true')
 args = arg_parser.parse_args()
 
@@ -44,10 +44,12 @@ else:
 #  How many sequences do we need?
 if '.' in args.n:
     final_number = int(float(args.n)*length)
+    if final_number > length:
+        raise ValueError('Cannot sample more sequences than there are!')
 else:
     final_number = int(args.n)
 
-#  Actually subsampling, creating distance matrix if needed
+#  Actually subsampling
 sample_ids = distmat.dj(final_count=final_number)
 if not args.i:
     sample_matrix = distmat.submatrix(sample_ids)
@@ -61,7 +63,7 @@ else:
     handle_base = args.f
 
 #  Simplified ID output
-if args.i:
+if args.i or not args.f:
     with open('{0}.ids'.format(handle_base), mode='w') as id_handle:
         for x in sample_ids:
             print(x, file=id_handle)

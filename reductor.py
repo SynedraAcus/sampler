@@ -15,6 +15,7 @@ keys = list(matrix.keys())
 for a in keys:
     matrix[(a[1], a[0])] = matrix[a]
 
+
 def scoredist(seq1, seq2, matrix=matrix, correction=1.337):
     """
     Return a Scoredist distance [Sonnhammer, Hollich 2005] for an alignment of two protein sequences.
@@ -56,10 +57,14 @@ def scoredist(seq1, seq2, matrix=matrix, correction=1.337):
     dist = -1*log(sigma_n/sigma_un)*100*correction
     return dist
 
+
 class MatrixFactory(object):
-    '''
+    """
     Distance matrix factory.
-    '''
+    Supports reading distance matrices from EMBOSS-formatted files and
+    building them from sequence collections using EMBOSS needle alignment
+    and either Scoredist (aminoacid) or kimura2param (nucleotide) distances.
+    """
 
     #  needle call line. format(fasta_file, asequenceID, bsequenceID)
     NEEDLE_CALL = 'needle -asequence {0}:{1} -bsequence {0}:{2} -gapopen 10.0 -gapextend 0.5 -aformat3 fasta -outfile stdout'
@@ -83,13 +88,15 @@ class MatrixFactory(object):
             line=line.rstrip()
             l_arr = line.split('\t')
             if l_arr[1].lstrip() == '1':
-                #  Counts start with 1, not zero. This is not important, as we can use any numeric IDS so long as we
-                #  write matrix.indices correctly
+                #  Counts start with 1, not zero. This is not important, as we
+                # can use any numeric IDS so long as we write matrix.indices correctly
                 array_size = l_arr[-1]
                 ret.init_nd(int(array_size)+1)
-                # ID line should be used only once, to define the array size. The rest of procedure is a dist parser
+                # ID line should be used only once, to define the array size.
+                # The rest of procedure is a dist parser
                 continue
-            #  Get item ID from the last element and add it to distance matrix 'indices' property
+            #  Get item ID from the last element and add it to distance matrix
+            # 'indices' property
             ids = l_arr.pop(-1)
             (al_id, num_id) = re.split('\s+', ids)
             num_id = int(num_id)
@@ -206,9 +213,13 @@ class MatrixFactory(object):
         d = log(w1)/2.0 - log(w2)/4.0
         return d
 
+
 class DistanceMatrix(object):
     '''
-    Distance matrix class. Contains a list of IDs and a distance matrix for the same IDs
+    Distance matrix class.
+    Contains a list of IDs and a distance matrix for the same IDs. Can produce
+    a submatrix when given an ID list, or calculate ID lists of a desired size
+    using DJ algorithm
     '''
     def __init__(self, handle=None):
         #  ID-to-index dictionary
