@@ -16,48 +16,6 @@ for a in keys:
     matrix[(a[1], a[0])] = matrix[a]
 
 
-def scoredist(seq1, seq2, matrix=matrix, correction=1.337):
-    """
-    Return a Scoredist distance [Sonnhammer, Hollich 2005] for an alignment of two protein sequences.
-    Note: only matched positions affect score: gaps are discarded.
-    :param seq1: SeqRecord
-    :param seq2: SeqRecord
-    :param matrix: dict
-    :param correction: float
-    :return: float
-    """
-    EXPECT = -0.5209
-    sub = subprocess.check_output([NWALIGN, str(seq1.seq), str(seq2.seq), '3'],
-                                  stderr=subprocess.PIPE,
-                                  universal_newlines=True)
-    lines = sub.split('\n')
-    j = 0
-    seqs = ['', '']
-    for a in lines[7:]:
-        if ':' in a:
-            j = 1
-        elif '1' in a:
-            break # If numeric lines started then all sequence was printed already
-        else:
-            seqs[j]+=a.rstrip()
-    del lines, sub #Close this stuff
-    score = 0
-    score_a = 0
-    score_b = 0
-    length = 0
-    for col in range(len(seqs[0])):
-        if seqs[1][col]=='-' or seqs[0][col]=='-':
-            continue  # Discard gapped columns
-        score_a += matrix[(seqs[0][col], seqs[0][col])]
-        score_b += matrix[(seqs[1][col], seqs[1][col])]
-        score += matrix[(seqs[1][col], seqs[0][col])]
-        length += 1.0
-    sigma_n = score - length * EXPECT
-    sigma_un = (score_a + score_b)/2 - length * EXPECT
-    dist = -1*log(sigma_n/sigma_un)*100*correction
-    return dist
-
-
 class MatrixFactory(object):
     """
     Distance matrix factory.
