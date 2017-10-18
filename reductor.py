@@ -117,8 +117,8 @@ class MatrixFactory(object):
         :param id2: ID of sequence 2
         :return: Bio.Align instance
         '''
-        screened_id1=re.sub(r'([\|\[\]\\\/ ])', lambda a: '\{}'.format(a.groups(1)[0]), id1)
-        screened_id2=re.sub(r'([\|\[\]\\\/ ])', lambda a: '\{}'.format(a.groups(1)[0]), id2)
+        screened_id1 = re.sub(r'([\|\[\]\\\/ ])', lambda a: '\{}'.format(a.groups(1)[0]), id1)
+        screened_id2 = re.sub(r'([\|\[\]\\\/ ])', lambda a: '\{}'.format(a.groups(1)[0]), id2)
         call = self.NEEDLE_CALL.format(fasta_file, screened_id1, screened_id2)
         # print(screened_call)
         # quit()
@@ -149,12 +149,13 @@ class MatrixFactory(object):
                     self._scoredist(fasta_file, sequence1.description, sequence2.description)
         # adding zeros
         ret[(seq_list[0].id, seq_list[0].id)] = 0.0
-        for x in ret.ids:
+        for x in ret.indices.keys():
             ret[(x, x)] = 0.0
         return ret
         pass
 
     def _scoredist(self, fasta, id1, id2, matrix=matrix, correction=1.337):
+        # 1.337 is not a 1337 joke, it's an actual correction value for blosum62
         EXPECT = -0.5209
         aln = self._build_alignment(fasta, id1, id2)
         score = 0

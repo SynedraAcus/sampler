@@ -35,7 +35,7 @@ elif args.f:
         distmat = m.create_aminoacid_matrix(args.f)
     else:
         distmat = m.create_nucleotide_matrix(args.f)
-    length = len(distmat.ids)
+    length = len(distmat.indices)
 else:
     sys.stderr.write('At least one of -f or -d should be used.\n')
     quit()
