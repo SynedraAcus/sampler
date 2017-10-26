@@ -232,15 +232,20 @@ class DistanceMatrix(object):
                 max_dist = dist
         not_sampled.remove(leader)
         reduced_list.append(leader)
-        sum_dist = {x: self[(leader, x)] for x in self.indices.keys()}
+        minima = {x: self[(leader, x)] for x in self.indices.keys()}
         #  Iterative addition of the elements
+        # For each sequence in not_sampled, take the minimum distance to ones
+        # in set. EG if there are three seqs in reduced_list, and for x the
+        # distances are [4,4,3], its minimum is 3.
         while len(reduced_list) < final_count:
-            leader = max(sum_dist.items(), key=lambda a: a[1])
+            leader = max(minima.items(), key=lambda a: a[1])
             reduced_list.append(leader[0])
-            del sum_dist[leader[0]]
+            del minima[leader[0]]
             not_sampled.remove(leader[0])
             for i in not_sampled:
-                sum_dist[i] += self[(leader[0], i)]
+                d = self[(leader[0], i)]
+                if d < minima[i]:
+                    minima[i] = d
         return reduced_list
 
     def submatrix(self, ids):
