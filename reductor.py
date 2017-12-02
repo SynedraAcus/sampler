@@ -29,13 +29,30 @@ class MatrixFactory(object):
     def __init__(self):
         pass
 
-    def read(self, filehandle):
+    def read(self, filehandle, format='emboss'):
         """
-        Read distance matrix from filehandle. Expects EMBOSS format (upper-right).
+        Read distance matrix from filehandle in either emboss or clustalo format
         Works using some voodoo
-        :param filehandle: Filehandle
+        :param filehandle: Filehandle for the matrix file
+        :param format: str, one of 'emboss' or 'clustalo'
         :return: DistanceMatrix
         """
+        if format == 'emboss':
+            return self.read_emboss(filehandle)
+        elif format == 'clustalo':
+            return self.read_clustalo(filehandle)
+        else:
+            raise ValueError('Invalid format')
+    
+    def read_clustalo(self, filehandle):
+        """
+        Read distance matrix from clustalo file
+        :param filehandle:
+        :return:
+        """
+        raise NotImplementedError('clustalo parser is not yet ready')
+        
+    def read_emboss(self, filehandle):
         ret = DistanceMatrix()
         # id_dict = {}
         num_matrix = {}  # Tmp matrix w/numeric IDs

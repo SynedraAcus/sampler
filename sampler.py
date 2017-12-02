@@ -15,6 +15,8 @@ arg_parser.add_argument('-n', type=str, help='Number (int) or percentage (float)
                         default='0.2')
 arg_parser.add_argument('-i', help='Write IDs of reduced set and quit without writing distance matrix or FASTA\nDefaults to False',
                         action='store_true')
+arg_parser.add_argument('--format', help='Distance matrix format. One of clustalo or emboss, defaults to emboss',
+                        default='emboss')
 args = arg_parser.parse_args()
 
 #  READ SEQUENCES, IF ANY
@@ -22,7 +24,7 @@ args = arg_parser.parse_args()
 m = MatrixFactory()
 if args.d:
     # If matrix was supplied
-    distmat = m.read(open(args.d))
+    distmat = m.read(open(args.d), format=args.format)
     length = len(distmat.indices.keys())  #  Yes, I could've given matrix __len__
     if args.f:
         # Check that the same sequences are in matrix and FASTA file
