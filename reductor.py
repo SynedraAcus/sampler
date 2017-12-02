@@ -50,7 +50,21 @@ class MatrixFactory(object):
         :param filehandle:
         :return:
         """
-        raise NotImplementedError('clustalo parser is not yet ready')
+        r = DistanceMatrix()
+        count = int(filehandle.readline().rstrip('\n'))
+        r.init_nd(count)
+        counter = 0
+        for line in filehandle:
+            arr = line.rstrip().split()
+            r.indices[arr[0]] = counter
+            for index, value in enumerate(arr[1:]):
+                r.array[(index, counter)] = float(value)
+                if index == counter:
+                    break
+                    # Loading only lower-left part of the matrix to reduce
+                    # memory. DistanceMatrix.__getitem__ would deal with NaN's
+            counter += 1
+        return r
         
     def read_emboss(self, filehandle):
         ret = DistanceMatrix()
@@ -60,7 +74,7 @@ class MatrixFactory(object):
             if '\t' not in line:
                 #  Skip lines that are not tab-separated, headers and such
                 continue
-            line=line.rstrip()
+            line = line.rstrip()
             l_arr = line.split('\t')
             if l_arr[1].lstrip() == '1':
                 #  Counts start with 1, not zero. This is not important, as we
